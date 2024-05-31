@@ -1,386 +1,180 @@
-from tkinter import *
+import tkinter as tk
 from tkinter import ttk
-import tkinter.messagebox as messagebox
-import time
 import random
-import numpy as np
-import matplotlib.pyplot as plt
+import time
 
-root = Tk()
-root.title("Sorting Visualizer Application")
-root.maxsize(1400, 800)
-root.config(bg = "#219ebc")
-root.resizable(True,True)
+class SortingVisualizer:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Sorting Algorithm Visualizer")
+        self.array = []
+        
+        # Create and pack the canvas to draw the array
+        self.canvas = tk.Canvas(root, width=800, height=400, bg='white')
+        self.canvas.pack()
 
-Algorithms_type = StringVar()
-list_Algorithms = ['Bubble Sort', 'Cocktail Shaker Sort', 'Cycle Sort', 'Gnome Sort', 'Heap Sort', 'Insertion Sort', 'Merge Sort', 'Odd Even Sort', 'Quick Sort', 'Selection Sort']
+        # Create a frame to hold the control buttons and complexity label
+        self.control_frame = ttk.Frame(root)
+        self.control_frame.pack()
 
-speed_type = StringVar()
-speed_list = ['Fast', 'Medium', 'Slow']
+        # Create and place buttons for each sorting algorithm and to generate a new array
+        self.bubble_sort_btn = ttk.Button(self.control_frame, text="Bubble Sort", command=self.bubble_sort)
+        self.bubble_sort_btn.grid(row=0, column=0, padx=5, pady=5)
 
-arr = []
-sort_arr=[]
+        self.selection_sort_btn = ttk.Button(self.control_frame, text="Selection Sort", command=self.selection_sort)
+        self.selection_sort_btn.grid(row=0, column=1, padx=5, pady=5)
 
-def displayArr(arr, colorArray):
-    canvas.delete("all")
-    canvas_width = 1000
-    canvas_height = 400
-    width_x = canvas_width / (len(arr) + 1)
-    ini = 4
-    space = 2
-    tempArr = [i / max(arr) for i in arr]
+        self.insertion_sort_btn = ttk.Button(self.control_frame, text="Insertion Sort", command=self.insertion_sort)
+        self.insertion_sort_btn.grid(row=0, column=2, padx=5, pady=5)
 
-    for i,h in enumerate(tempArr):
-        x1 = i * width_x + ini + space
-        y1 = canvas_height - h * 390
-        x2 = (i + 1) * width_x + ini
-        y2 = canvas_height
-        canvas.create_rectangle(x1, y1, x2, y2, fill=colorArray[i])
-        canvas.create_text(x1 + 2, y1, anchor=SW, text=str(arr[i]))
-    root.update()
+        self.merge_sort_btn = ttk.Button(self.control_frame, text="Merge Sort", command=lambda: self.merge_sort(0, len(self.array) - 1))
+        self.merge_sort_btn.grid(row=0, column=3, padx=5, pady=5)
 
+        self.quick_sort_btn = ttk.Button(self.control_frame, text="Quick Sort", command=lambda: self.quick_sort(0, len(self.array) - 1))
+        self.quick_sort_btn.grid(row=0, column=4, padx=5, pady=5)
 
-def createArray():
-    global arr
+        self.generate_btn = ttk.Button(self.control_frame, text="Generate Array", command=self.generate_array)
+        self.generate_btn.grid(row=0, column=5, padx=5, pady=5)
 
-    array_size = 20
-    range_begin = 0
-    range_end = 100
+        # Create and place a label to display the time complexity
+        self.complexity_label = ttk.Label(self.control_frame, text="Time Complexity: ")
+        self.complexity_label.grid(row=1, column=0, columnspan=6, pady=5)
 
-    arr = []
-    for m in range(0,array_size ):  
-        random_integer = random.randint(range_begin, range_end) #starting from a higher value and not 0 because the vertical bars wont be visible
-        arr.append(random_integer)
-        #sort_arr= sorted(arr)
-    displayArr(arr, ["#003049" for x in range(len(arr))])
+        # Generate the initial array
+        self.generate_array()
 
-    
-def process_input():
-    global arr
-    user_input = entry.get()
-    try :
-        array = [int(x) for x in user_input.split(",")]
-        arr = []
-        for i in array:
-            arr.append(i)
-            displayArr(arr, ['#003049' for i in range(len(arr))])
-            entry.delete(0, END)
-    except ValueError:
-        messagebox.showerror("Error", "Invalid input: please enter numbers separated by commas")
-        entry.delete(0, END)
+    def generate_array(self, size=50):
+        """Generate a new random array and draw it on the canvas."""
+        self.array = [random.randint(1, 400) for _ in range(size)]
+        self.draw_array()
 
-def speed():
+    def draw_array(self, color_array=None):
+        """Draw the array on the canvas."""
+        self.canvas.delete("all")
+        c_width = 800
+        c_height = 400
+        x_width = c_width / len(self.array)
+        offset = 10
+        spacing = 2
 
-    slow = 0.8
-    medium = 0.5
-    fast = 0.00001
+        for i, height in enumerate(self.array):
+            x0 = i * x_width + offset + spacing
+            y0 = c_height - height
+            x1 = (i + 1) * x_width + offset
+            y1 = c_height
+            if color_array:
+                color = color_array[i]
+            else:
+                color = "blue"
+            self.canvas.create_rectangle(x0, y0, x1, y1, fill=color)
+        self.root.update_idletasks()
 
-    if speed_comboBox.get() == 'Slow':
-        return slow
-    elif speed_comboBox.get() == 'Medium':
-        return medium
-    elif speed_comboBox.get() =="Fast":
-        return fast
+    def swap(self, i, j):
+        """Swap two elements in the array and update the canvas."""
+        self.array[i], self.array[j] = self.array[j], self.array[i]
+        self.draw_array(['red' if x == i or x == j else 'blue' for x in range(len(self.array))])
+        time.sleep(0.1)
 
-#Quick Sort
+    def update_complexity_label(self, complexity):
+        """Update the time complexity label with the given complexity."""
+        self.complexity_label.config(text=f"Time Complexity: {complexity}")
 
-def partition(arr, start, end, displayArr, tym ):
-    pivot = arr[start]
-    low = start + 1
-    high = end
-    while True:
-        while low <= high and arr[high] >= pivot:
-            high = high - 1
-        while low <= high and arr[low] <= pivot:
-            low = low + 1
-        if low <= high:
-            arr[low], arr[high] = arr[high], arr[low]
-            displayArr(arr, ["#264653" if x == low or x == high else "#023047" for x in range(len(arr))])
-            time.sleep(tym)
-        else:
-            break
+    def bubble_sort(self):
+        """Perform bubble sort on the array with visual updates."""
+        self.update_complexity_label("O(n^2)")
+        for i in range(len(self.array) - 1):
+            for j in range(len(self.array) - i - 1):
+                if self.array[j] > self.array[j + 1]:
+                    self.swap(j, j + 1)
 
-    arr[start], arr[high] = arr[high], arr[start]
-    displayArr(arr, ["#003049" if x == start or x == high else "#003049" for x in range(len(arr))])
-    time.sleep(tym)
+    def selection_sort(self):
+        """Perform selection sort on the array with visual updates."""
+        self.update_complexity_label("O(n^2)")
+        for i in range(len(self.array)):
+            min_idx = i
+            for j in range(i + 1, len(self.array)):
+                if self.array[j] < self.array[min_idx]:
+                    min_idx = j
+            self.swap(i, min_idx)
 
-    return high
-
-def quick_sort(arr, start, end, displayArr, tym):
-    if start >= end:
-        return
-
-    p = partition(arr, start, end,displayArr,tym)
-    quick_sort(arr, start, p-1, displayArr, tym)
-    quick_sort(arr, p+1, end, displayArr, tym)
-
-#Heap Sort
-
-def Heap(arr, n, i, displayArr, tym):
-    largest = i
-    left = 2 * i + 1
-    right = 2 * i + 2
-    if left < n and arr[i] < arr[left]:
-        largest = left
-    if right < n and arr[largest] < arr[right]:
-        largest = right
-    if largest != i:
-        arr[i], arr[largest] = arr[largest], arr[i]
-        displayArr(arr, ["#264653" if x == i or x == largest else "#023047" for x in range(len(arr))])
-        time.sleep(tym)
-        Heap(arr, n, largest, displayArr, tym)
-
-def HeapSort(arr, displayArr, tym):
-    n = len(arr)
-    for i in range(n // 2 - 1, -1, -1):
-        Heap(arr, n, i, displayArr, tym)
-    for i in range(n-1, 0, -1):
-        arr[i], arr[0] = arr[0], arr[i]
-        displayArr(arr, ["#264653" if x == i or x == 0 else "#023047" for x in range(len(arr))])
-        time.sleep(tym)
-        Heap(arr, i, 0, displayArr, tym)
-
-#Merge sort
-def merge(arr, start, mid, end, displayArr):
-    p = start
-    q = mid + 1
-    tempArray = []
-
-    for i in range(start, end+1):
-        if p > mid:
-            tempArray.append(arr[q])
-            q+=1
-        elif q > end:
-            tempArray.append(arr[p])
-            p+=1
-        elif arr[p] < arr[q]:
-            tempArray.append(arr[p])
-            p+=1
-        else:
-            tempArray.append(arr[q])
-            q+=1
-
-    for p in range(len(tempArray)):
-        arr[start] = tempArray[p]
-        start += 1
-
-def merge_sort(arr, start, end, displayArr, tym):
-    if start < end:
-        mid = int((start + end) / 2)
-        merge_sort(arr, start, mid, displayArr, tym)
-        merge_sort(arr, mid+1, end, displayArr, tym)
-
-        merge(arr, start, mid, end, displayArr)
-
-        displayArr(arr, ["#264653" if x >= start and x < mid else "#023047" if x == mid 
-                        else "#264653" if x > mid and x <=end else "#023047" for x in range(len(arr))])
-        time.sleep(tym)
-
-    displayArr(arr, ["#003049" for x in range(len(arr))])
-
-#Gnome Sort
-def GnomeSort(arr, displayArr, tym):
-    n = len(arr)
-    index = 0
-    while index < n:
-        if index == 0:
-            index += 1
-        if arr[index] >= arr[index - 1]:
-            index += 1
-        else:
-            arr[index], arr[index - 1] = arr[index - 1], arr[index]
-            displayArr(arr, ["#264653" if x == index or x == index - 1 else "#023047" for x in range(len(arr))])
-            time.sleep(tym)
-            index -= 1
-
-#Odd Even Sort
-def OddEvenSort(arr, displayArr, tym):
-    n = len(arr)
-    sorted = False
-    while not sorted:
-        sorted = True
-        for i in range(1, n-1, 2):
-            if arr[i] > arr[i+1]:
-                arr[i], arr[i+1] = arr[i+1], arr[i]
-                displayArr(arr, ["#264653" if x == i or x == i + 1 else "#023047" for x in range(len(arr))])
-                time.sleep(tym)
-                sorted = False
-        for i in range(0, n-1, 2):
-            if arr[i] > arr[i+1]:
-                arr[i], arr[i+1] = arr[i+1], arr[i]
-                displayArr(arr, ["#264653" if x == i or x == i+1 else "#023047" for x in range(len(arr))])
-                time.sleep(tym)
-                sorted = False
-
-#Cocktail Shaker Sort
-
-def CocktailShaker(arr, displayArr, tym):
-    n = len(arr)
-    swapped = True
-    start = 0
-    end = n-1
-    while(swapped == True):
-        swapped = False
-        for i in range(start, end):
-            if(arr[i] > arr[i+1]):
-                arr[i], arr[i+1] = arr[i+1], arr[i]
-                displayArr(arr, ['#264653' if x == i or x == i+1 else "#023047" for x in range(len(arr))])
-                time.sleep(tym)
-                swapped = True
-        if(swapped == False):
-            break
-        swapped = False
-        end = end - 1 #backward pass
-        for i in range(end-1, start-1, -1):
-            if(arr[i] > arr[i+1]):
-                arr[i], arr[i+1] = arr[i+1], arr[i]
-                displayArr(arr, ["#264653" if x == i or x == i + 1 else "#023047" for x in range(len(arr))])
-                time.sleep(tym)
-                swapped = True
-        start = start + 1
-
-#Cycle Sort
-def CycleSort(arr, displayArr, tym):
-    n = len(arr)
-    for cycleStart in range(0, n-1):
-        item = arr[cycleStart]
-        pos = cycleStart
-        for i in range(cycleStart + 1, n):
-            if arr[i] < item:
-                pos += 1
-        if pos == cycleStart:
-            continue
-        while item == arr[pos]:
-            pos += 1
-        arr[pos], item = item, arr[pos]
-        displayArr(arr, ["#264653" if x == pos or x == cycleStart else "#023047" for x in range(len(arr))])
-        time.sleep(tym)
-        while pos != cycleStart:
-            pos = cycleStart
-            for i in range(cycleStart + 1, n):
-                if arr[i] < item:
-                    pos += 1
-            while item == arr[pos]:
-                pos += 1
-            arr[pos], item = item, arr[pos]
-            displayArr(arr, ["#264653" if x == pos or x == cycleStart else "#023047" for x in range(len(arr))])
-            time.sleep(tym)
-
-
-def sort():
-    
-    if sorted(arr) == arr:
-        messagebox.showinfo("Already Sorted", "The array is already sorted.")
-        return
-
-    tym = speed()
-    n = len(arr)
-
-    if comboBox.get()=='Merge Sort':
-        merge_sort(arr, 0, len(arr)-1, displayArr, tym)
-        messagebox.showinfo("The sorrted arr", sorted(arr))    
-
-    elif comboBox.get()=='Selection Sort':
-        for i in range(0,n-1):
-            for j in range(i+1,n):
-                if (arr[i]>arr[j]):
-                    arr[i], arr[j] = arr[j], arr[i]  
-
-                    displayArr(arr, ["#264653" if x == j or x == j+1 else "#023047" for x in range(len(arr))])
-                    time.sleep(tym)
-                        
-        displayArr(arr, ["#003049" for x in range(len(arr))])
-        messagebox.showinfo("The sorrted arr", sorted(arr))
-
-    elif comboBox.get()=='Bubble Sort':
-        for i in range(n-1):
-            for j in range(0, n-i-1):
-                if (arr[j] > arr[j + 1]):
-                    arr[j], arr[j + 1] = arr[j + 1], arr[j] 
-                    displayArr(arr, ["#264653" if x == j else "#023047" if x==j+1 else "#2a9d8f" for x in range(len(arr))])
-                    time.sleep(tym)
-        messagebox.showinfo("The sorrted arr", sorted(arr))
-        displayArr(arr, ["#003049" for x in range(len(arr))])
-
-    elif comboBox.get()=='Insertion Sort':
-        for i in range(1, len(arr)):
-            key = arr[i]
-            j = i-1
-            while (j >=0 and key < arr[j]):
-                arr[j+1] = arr[j]
+    def insertion_sort(self):
+        """Perform insertion sort on the array with visual updates."""
+        self.update_complexity_label("O(n^2)")
+        for i in range(1, len(self.array)):
+            key = self.array[i]
+            j = i - 1
+            while j >= 0 and key < self.array[j]:
+                self.array[j + 1] = self.array[j]
+                self.draw_array(['red' if x == j or x == j + 1 else 'blue' for x in range(len(self.array))])
+                time.sleep(0.1)
                 j -= 1
-                displayArr(arr, ["#264653" if x == j else "#023047" if x==j+1 else "#2a9d8f" for x in range(len(arr))])
-                time.sleep(tym)
-            arr[j+1] = key
-        messagebox.showinfo("The Sorrted Array", sorted(arr))
-        displayArr(arr, ["#87CEFA" for x in range(len(arr))])
+            self.array[j + 1] = key
+            self.draw_array()
 
-    elif comboBox.get()=='Quick Sort':
-        quick_sort(arr,0,len(arr)-1,displayArr, tym)
-        messagebox.showinfo("The Sorrted Array", sorted(arr))
+    def merge_sort(self, start, end):
+        """Perform merge sort on the array with visual updates."""
+        if start < end:
+            self.update_complexity_label("O(n log n)")
+            mid = (start + end) // 2
+            self.merge_sort(start, mid)
+            self.merge_sort(mid + 1, end)
+            self.merge(start, mid, end)
 
-    elif comboBox.get() == 'Heap Sort':
-        HeapSort(arr, displayArr, tym)
-        messagebox.showinfo("The Sorted Array", sorted(arr))
+    def merge(self, start, mid, end):
+        """Merge two halves of the array with visual updates."""
+        left = self.array[start:mid + 1]
+        right = self.array[mid + 1:end + 1]
+        k = start
+        i = 0
+        j = 0
 
-    elif comboBox.get() == 'Gnome Sort':
-        GnomeSort(arr, displayArr, tym)
-        messagebox.showinfo("The Sorted Array", sorted(arr))
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                self.array[k] = left[i]
+                i += 1
+            else:
+                self.array[k] = right[j]
+                j += 1
+            k += 1
+            self.draw_array(['green' if x >= start and x <= end else 'blue' for x in range(len(self.array))])
+            time.sleep(0.1)
 
-    elif comboBox.get() == 'Odd Even Sort':
-        OddEvenSort(arr, displayArr, tym)
-        messagebox.showinfo("The Sorted Array", sorted(arr))
+        while i < len(left):
+            self.array[k] = left[i]
+            i += 1
+            k += 1
+            self.draw_array(['green' if x >= start and x <= end else 'blue' for x in range(len(self.array))])
+            time.sleep(0.1)
 
-    elif comboBox.get() == 'Cocktail Shaker Sort':
-        CocktailShaker(arr, displayArr, tym)
-        messagebox.showinfo("The Sorted Array", sorted(arr))
+        while j < len(right):
+            self.array[k] = right[j]
+            j += 1
+            k += 1
+            self.draw_array(['green' if x >= start and x <= end else 'blue' for x in range(len(self.array))])
+            time.sleep(0.1)
 
-    elif comboBox.get() == 'Cycle Sort':
-        CycleSort(arr, displayArr, tym)
-        messagebox.showinfo("The Sorted Array", sorted(arr))
+    def quick_sort(self, start, end):
+        """Perform quick sort on the array with visual updates."""
+        if start < end:
+            self.update_complexity_label("O(n log n)")
+            pivot_index = self.partition(start, end)
+            self.quick_sort(start, pivot_index - 1)
+            self.quick_sort(pivot_index + 1, end)
 
-def resetArray():
-    global arr
-    arr = []
-    displayArr(arr, [])
+    def partition(self, start, end):
+        """Partition the array for quick sort with visual updates."""
+        pivot = self.array[end]
+        i = start - 1
 
-window = Frame(root, width= 1000, height=500, bg="#219ebc")
-window.grid(row=0, column=0, padx=10, pady=5)
+        for j in range(start, end):
+            if self.array[j] < pivot:
+                i += 1
+                self.swap(i, j)
+        self.swap(i + 1, end)
+        return i + 1
 
-l1 = Label(window, text="Sorting Type", bg="#219ebc" , font = ('tajawal' , 12 , 'bold'))
-l1.grid(row=0, column=0, padx=10, pady=5, sticky=W)
-
-comboBox = ttk.Combobox(window, textvariable=Algorithms_type, values=list_Algorithms)
-comboBox.grid(row=0, column=1, padx=5, pady=5)
-comboBox.current(0)
-
-lbl2 = Label(window, text="Speed", bg="#219ebc", font=('tajawal', 13, 'bold'))
-lbl2.place(x=10, y=44)
-
-speed_comboBox = ttk.Combobox(window, textvariable=speed_type, values=speed_list)
-speed_comboBox.grid(row=1, column=1, padx=5, pady=5)
-speed_comboBox.current(0)
-
-b1 = Button(window, text="Sort", command=sort, bg="#8ecae6" ,  width=15 , font = ('tajawal' , 12 , 'bold'))
-b1.grid(row=10, column=15, padx=5, pady=5)
-
-b2 = Button(window, text="Create Array", command=createArray, bg="#8ecae6", width=15 , font = ('tajawal' , 12 , 'bold'))
-b2.grid(row=0, column=3, padx=5, pady=5)
-
-b3 = Button(window, text="Reset Graph", command=resetArray, bg="#8ecae6", width=15 , font = ('tajawal' , 12 , 'bold'))
-b3.place(x=420, y=43)
-
-canvas = Canvas(root, width=1000, height=1000, bg="white")
-canvas.grid(row=1, column=0, padx=10, pady=5)
-
-quit_button = Button(root, text="close", command=root.destroy, width=15 , height="1", font = ('tajawal' , 12 , 'bold'), bg="#8ecae6" )
-quit_button.place(x=725, y=45)  
-
-Label(window, text="Enter numbers sperate by (,)", bg='#219ebc', font=(('tajawal' , 12 , 'bold'))).grid(row=10, column=0, padx=5, pady=5 )
-entry = Entry(window, width=25)
-entry.grid(row=10, column=1, padx=15, pady=10)
-Button(window, text="Enter Input", height=1, width=15, fg='black', bg='#8ecae6', font = ('tajawal' , 12 , 'bold'), command=process_input).grid(row=10, column=3, padx=5, pady=5)
-
-
-
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = SortingVisualizer(root)
+    root.mainloop()
+    
